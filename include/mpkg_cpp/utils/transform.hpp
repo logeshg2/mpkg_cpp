@@ -2,53 +2,42 @@
 #define TRANSFORM_HPP
 
 #include <cmath>
+#include <cassert>
 #include <vector>
 #include <iostream>
 #include <Eigen/Dense>
 
+#include "mpkg_cpp/utils/rotation.hpp"
+
 namespace mpkg {
-
-    class Rotation{
-        private:
-            Eigen::Matrix3d rotm;
-
-        public:
-            // default
-            Rotation();
-
-            // constructor for rotation along X, Y, Z input ( euler notation )
-            Rotation(float r_x, float r_y, float r_z, bool degrees);
-
-            Eigen::Matrix3d matrix();
-
-            // rotation matrix utils
-            Eigen::Matrix3d RX(float r_x);
-            Eigen::Matrix3d RY(float r_y);
-            Eigen::Matrix3d RZ(float r_z);
-
-            // math utils
-            float deg2rad(float deg);
-            float rad2deg(float deg);
-
-            // cout override function
-            friend std::ostream& operator << (std::ostream& out, Rotation& obj);
-            friend std::ostream& operator << (std::ostream& out, Eigen::Matrix3d& mat);
-
-    };
 
     class SE3{
         private:
             Eigen::Matrix4d mat;
+            std::vector<double> trans{0, 0, 0};
+            Eigen::Matrix3d rotm;
 
         public:
             // default contructor
             SE3();
 
             // constructor for only translation
-            SE3(const std::vector<double>& trans);
+            SE3(const std::vector<double>& translaion);
 
-            // constructor for both translation + orientation
-            // SE3(const std::vector<double>& trans, const mpkg::Rotation)
+            // constructor for both translation and rotation (euler notation)
+            SE3(const std::vector<double>& translation, const std::vector<double>& rotation);
+
+            // other utils
+            Eigen::Matrix4d transform();
+            std::vector<double> translation();
+            Eigen::Matrix3d rotation();
+
+            // utils
+            void updateRotation(Eigen::Matrix3d& rot);
+
+            friend std::ostream& operator << (std::ostream& out, SE3& obj);
+            friend std::ostream& operator << (std::ostream& out, std::vector<double>& tvec);
+
     };
 
 }

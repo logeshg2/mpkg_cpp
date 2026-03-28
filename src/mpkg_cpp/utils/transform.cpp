@@ -3,69 +3,90 @@
 
 namespace mpkg {
 
-    Rotation::Rotation(){
-        rotm << Eigen::Matrix3d::Identity(3,3);
+    SE3::SE3(){
+        mat = Eigen::Matrix4d::Identity();
     }
 
-    Rotation::Rotation(float r_x, float r_y, float r_z, bool degrees=true){
-        if (degrees){
-            r_x = Rotation::deg2rad(r_x);
-            r_y = Rotation::deg2rad(r_y);
-            r_z = Rotation::deg2rad(r_z);
+    SE3::SE3(const std::vector<double>& translation){
+        
+        assert(translation.size() == 3 && "Translation vector should of size 3");
+        
+        mat = Eigen::Matrix4d::Identity();
+
+        // update translation
+        mat(0, 3) = translation[0];
+        mat(1, 3) = translation[1];
+        mat(2, 3) = translation[2];
+
+        // update trans
+        trans[0] = translation[0];
+        trans[1] = translation[1];
+        trans[2] = translation[2];
+        // uprate rotm
+        rotm = Eigen::Matrix3d::Identity();
+    }
+
+    SE3::SE3(const std::vector<double>& translation, const std::vector<double>& rotation){
+        
+        assert(translation.size() == 3 && "Translation vector should of size 3");
+        assert(rotation.size() == 3 && "Rotation vector should of size 3");
+
+        mat = Eigen::Matrix4d::Identity();
+
+        // update translation
+        mat(0, 3) = translation[0];
+        mat(1, 3) = translation[1];
+        mat(2, 3) = translation[2];
+
+        // update rotation
+        // first create rotation matrix from euler notation
+        Rotation rotObj(rotation[0], rotation[1], rotation[2], true);
+        updateRotation(rotObj.matrix());
+    
+        // update trans
+        trans[0] = translation[0];
+        trans[1] = translation[1];
+        trans[2] = translation[2];
+    }
+
+    void SE3::updateRotation(Eigen::Matrix3d& rot){
+        // this is brute for update
+        for (int ri=0;ri<3;ri++){
+            for (int ci=0;ci<3;ci++){
+                mat(ri, ci) = rot(ri, ci);
+
+                // uprate rotm
+                rotm(ri, ci) = rot(ri, ci);
+            }
         }
-        
-        Eigen::Matrix3d rx = Rotation::RX(r_x);
-        Eigen::Matrix3d ry = Rotation::RY(r_y);
-        Eigen::Matrix3d rz = Rotation::RZ(r_z);
-        
-        // final rotation matrix
-        rotm = (rz * ry) * rx;
     }
 
-    Eigen::Matrix3d Rotation::matrix(){
+    Eigen::Matrix4d SE3::transform(){
+        return mat;
+    }
+
+    std::vector<double> SE3::translation(){
+        return trans;
+    }
+
+    Eigen::Matrix3d SE3::rotation(){
         return rotm;
     }
 
-    Eigen::Matrix3d Rotation::RX(float r_x){
-        Eigen::Matrix3d rx = Eigen::Matrix3d::Identity(3, 3);
-        rx(1, 1) = std::cos(r_x);
-        rx(2, 2) = std::cos(r_x);
-        rx(1, 2) = -1 * std::sin(r_x);
-        rx(2, 1) = std::sin(r_x);
-        return rx;
-    }
-
-    Eigen::Matrix3d Rotation::RY(float r_y){
-        Eigen::Matrix3d ry = Eigen::Matrix3d::Identity(3, 3);
-        ry(0, 0) = std::cos(r_y);
-        ry(2, 2) = std::cos(r_y);
-        ry(2, 0) = -1 * std::sin(r_y);
-        ry(0, 2) = std::sin(r_y);
-        return ry;
-    }
-
-    Eigen::Matrix3d Rotation::RZ(float r_z){
-        Eigen::Matrix3d rz = Eigen::Matrix3d::Identity(3, 3);
-        rz(0, 0) = std::cos(r_z);
-        rz(1, 1) = std::cos(r_z);
-        rz(0, 1) = -1 * std::sin(r_z);
-        rz(1, 0) = std::sin(r_z);
-        return rz;
-    }
-
-    std::ostream& operator << (std::ostream& out, Rotation& obj){
-        out << obj.matrix();
+    std::ostream& operator << (std::ostream& out, SE3& obj){
+        out << obj.transform();
         out << "\n";
-
-        return out;   
+        
+        return out;
     }
 
-    float Rotation::deg2rad(float deg){
-        return (deg * (M_PI / 180.0));
-    }
-
-    float Rotation::rad2deg(float deg){
-        return (deg * (M_PI / 180.0));
+    std::ostream& operator << (std::ostream& out, std::vector<double> tvec){
+        for (auto val : tvec){
+            out << val << " ";
+        }
+        out << "\n";
+        
+        return out;
     }
 
 }
